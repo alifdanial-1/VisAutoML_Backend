@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Media Files Test</h1>
+    
+    <h2>Testing Direct Media Access</h2>
+    <div class="image-container">
+        <div class="image-item">
+            <h3>numbers.webp</h3>
+            <img src="/static/media/numbers.e0ef46c6a33b1eb4c9e4.webp" alt="Numbers">
+        </div>
+        <div class="image-item">
+            <h3>spam-modified.png</h3>
+            <img src="/static/media/spam-modified.89d081613f23298ee54f.png" alt="Spam Modified">
+        </div>
+        <div class="image-item">
+            <h3>backline.png</h3>
+            <img src="/static/media/backline.ab8f953da4a57c1099bf.png" alt="Backline">
+        </div>
+        <div class="image-item">
+            <h3>asset-1.png</h3>
+            <img src="/static/media/asset-1.c65e43ee446f7629c8e6.png" alt="Asset 1">
+        </div>
+    </div>
+</body>
+</html> 
