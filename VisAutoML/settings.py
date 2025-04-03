@@ -184,11 +184,11 @@ CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
     'http://localhost:8000',
     'http://192.168.144.88:3000',
-    'https://visautomlbackend-production.up.railway.app',
+    'https://visautomlbackend-production-0d04.up.railway.app',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://visautomlbackend-production.up.railway.app',
+    'https://visautomlbackend-production-0d04.up.railway.app',
     'http://localhost:8000',
 ]
 
