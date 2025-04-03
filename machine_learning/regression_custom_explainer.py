@@ -844,6 +844,13 @@ if __name__ == '__main__':
         hide_whatifcontributiontable=True,
         hide_log_x=True, # hide x-axis logs toggle on regression plots
         hide_log_y=True, precision='float32', depth=6, 
+        plot_config={
+                    'layout': {
+                        'font': {'family': 'Arial, sans-serif'},
+                        'xaxis': {'tickfont': {'size': 12}},
+                        'yaxis': {'tickfont': {'size': 12}}
+                    }
+                }
 
     )
     

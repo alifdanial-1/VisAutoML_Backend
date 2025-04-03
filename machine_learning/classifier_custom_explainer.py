@@ -832,7 +832,13 @@ if __name__ == '__main__':
                             hide_cumprecision=True, hide_pdp=True, 
                             hide_contributiontable=True, hide_whatifpdp=True,
                             hide_whatifcontributiontable=True, show_metrics=['accuracy', 'precision','roc_auc_score'], precision='float32', check_additivity=False,
-
+                            plot_config={
+                                        'layout': {
+                                            'font': {'family': 'Arial, sans-serif'},
+                                            'xaxis': {'tickfont': {'size': 12}},
+                                            'yaxis': {'tickfont': {'size': 12}}
+                                        }
+                                    }
 
                             )
     
