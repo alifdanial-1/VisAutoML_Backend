@@ -846,4 +846,12 @@ if __name__ == '__main__':
     db.to_yaml(filename+".yaml", explainerfile=filename+".joblib")
     explainer.dump(filename+".joblib")
     # os.system("explainerdashboard run explainer.joblib --no-browser")
+
+    # Monkey patch to bypass deprecated app.run_server
+
+    def patched_run(self, port=8050, host='127.0.0.1', **kwargs):
+        self.app.run(port=port, host=host, **kwargs)
+
+    ExplainerDashboard.run = patched_run
+
     db.run()
