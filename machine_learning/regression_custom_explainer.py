@@ -858,8 +858,14 @@ if __name__ == '__main__':
     explainer.dump(filename+".joblib")
     # os.system("explainerdashboard run explainer.joblib --no-browser")
 
-    def patched_run(self, port=8050, host='127.0.0.1', **kwargs):
-        self.app.run(port=port, host=host, **kwargs)
+    def patched_run(self, port=8050, host='0.0.0.0', **kwargs):
+        self.app.run(
+            port=port, 
+            host=host, 
+            debug=False,
+            threaded=True,
+            **kwargs
+        )
 
     ExplainerDashboard.run = patched_run
     

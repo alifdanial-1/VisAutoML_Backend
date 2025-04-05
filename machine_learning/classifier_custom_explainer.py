@@ -488,9 +488,9 @@ def flask_main(x_train, x_test, y_train, y_test, catCols, model_id, auto):
                             dbc.Col([
                                 html.H3("Visualize Precision and Recall"),
                                 html.Div(
-                                    "Precision can be observed when True Positives (predicted " f"{self.explainer.labels[0]}" " and actual" f"{self.explainer.labels[0]}" ") are higher than False Positives " "(predicted " f"{self.explainer.labels[1]}" " and actual" f"{self.explainer.labels[0]}"")."),
+                                    "Precision can be observed when True Positives (predicted " f"{self.explainer.labels[0]}" " and actual " f"{self.explainer.labels[0]}" ") are higher than False Positives " "(predicted " f"{self.explainer.labels[1]}" " and actual " f"{self.explainer.labels[0]}"")."),
                                 html.Div(
-                                    "Recall can be observed when True Positives are higher than False Negatives" "(predicted " f"{self.explainer.labels[0]}" " and actual" f"{self.explainer.labels[1]}"")."),
+                                    "Recall can be observed when True Positives are higher than False Negatives" "(predicted " f"{self.explainer.labels[0]}" " and actual " f"{self.explainer.labels[1]}"")."),
                                 # self.interaction.layout()
                             ], style=dict(margin=10)),
                         ], style=dict(margin=10)),
@@ -848,9 +848,8 @@ if __name__ == '__main__':
     # os.system("explainerdashboard run explainer.joblib --no-browser")
 
     # Monkey patch to bypass deprecated app.run_server
-
-    def patched_run(self, port=8050, host='127.0.0.1', **kwargs):
-        self.app.run(port=port, host=host, **kwargs)
+    def patched_run(self, port=8050, host='0.0.0.0', **kwargs):
+        self.app.run(port=port, host=host, debug=False, **kwargs)
 
     ExplainerDashboard.run = patched_run
 
