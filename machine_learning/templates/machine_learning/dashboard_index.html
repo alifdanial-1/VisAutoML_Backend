@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-index">
+    <h1>Available Dashboards</h1>
+    <ul>
+        {% for i in num_models|range %}
+            <li>
+                <a href="{% url 'model_dashboard' model_id=i %}">Model Dashboard {{ i }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %} 
