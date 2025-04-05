@@ -47,13 +47,14 @@ def get_assigned_port(model_instance):
         # Get last MAX_DASHBOARDS models with an assigned port
         last_models = Model.objects.filter(port__isnull=False).order_by('-id')[:MAX_DASHBOARDS]
         assigned_ports = [m.port for m in last_models if m.port is not None]
-        # Compute available ports in the range
-        available_ports = [p for p in range(BASE_PORT, BASE_PORT + MAX_DASHBOARDS) if p not in assigned_ports]
-        if available_ports:
-            return available_ports[0]
-        else:
-            # If all ports are taken, you could choose to recycle the smallest one (or implement a custom strategy)
-            return min(assigned_ports)
+        
+        # Start from BASE_PORT and find the first available port
+        for port in range(BASE_PORT, BASE_PORT + MAX_DASHBOARDS):
+            if port not in assigned_ports:
+                return port
+                
+        # If all ports are taken, return the next port after the highest assigned port
+        return max(assigned_ports) + 1 if assigned_ports else BASE_PORT
 
 def index(request):
     return render(request, "machine_learning/index.html")
