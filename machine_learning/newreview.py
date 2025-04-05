@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import logging
 
 
 def find_columns_to_scale_and_normalize(df, skew_threshold=1.0, std_dev_threshold=2.0):
@@ -132,51 +133,72 @@ def preprocessdata(file):
     return betterReport
 
 
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('review_operations.log'),
+        logging.StreamHandler()
+    ]
+)
+
 def get_review(file):
-    file = pd.read_csv(file)
-    print(file)
-    empty_percentage = file.isnull().mean()*100
-    empty = empty_percentage.to_dict()
-    res = file.dtypes.to_frame('dtypes').reset_index()
-    types = res.set_index('index')['dtypes'].astype(str).to_dict()
-    columns = file.columns
-    rows = len(file)
-    result = []
-    fit_for_use = []
-    histogram = {}
-    for column in columns:
-        data = {"name": column, "empty": math.floor(empty[column]), "fit_for_use": math.floor(
-            empty[column]) <= 5, "type": types[column]}
-        result.append(data)
-        fit_for_use.append(math.floor(
-            empty[column]) <= 5)
-        if types[column] == "int64":
-            histogram[column] = file[column].value_counts().to_dict()
-    fileFitForUse = fit_for_use.count(True) > 3 and (rows >= (len(columns)*30))
+    try:
+        logger.info(f"Starting review for file: {file}")
+        file = pd.read_csv(file)
+        logger.info(f"File loaded successfully, shape: {file.shape}")
+        empty_percentage = file.isnull().mean()*100
+        empty = empty_percentage.to_dict()
+        res = file.dtypes.to_frame('dtypes').reset_index()
+        types = res.set_index('index')['dtypes'].astype(str).to_dict()
+        columns = file.columns
+        rows = len(file)
+        result = []
+        fit_for_use = []
+        histogram = {}
+        for column in columns:
+            data = {"name": column, "empty": math.floor(empty[column]), "fit_for_use": math.floor(
+                empty[column]) <= 5, "type": types[column]}
+            result.append(data)
+            fit_for_use.append(math.floor(
+                empty[column]) <= 5)
+            if types[column] == "int64":
+                histogram[column] = file[column].value_counts().to_dict()
+        fileFitForUse = fit_for_use.count(True) > 3 and (rows >= (len(columns)*30))
+        
     
-
-    file = file.fillna('')
-    nullRows = file.isna().any(axis=1).sum()
-    print(f"nullRows: {nullRows}")
+        file = file.fillna('')
+        nullRows = file.isna().any(axis=1).sum()
+        print(f"nullRows: {nullRows}")
+        
+        betterReport = preprocessdata(file)
+        # json_data = file.to_json(orient="records")
+        json_data = []
+        for row in file:
+            json_data.append(row)
+        # Use the loaded configuration in your ProfileReport
+        profile = ProfileReport(
+            file,
+            title="Uncleaned Data",
+            samples=None,
+            correlations=None,
+            interactions=None, 
+            progress_bar = True,
+            html={"navbar_show": False,
+                  "minify_html": True,}
+        )
     
-    betterReport = preprocessdata(file)
-    # json_data = file.to_json(orient="records")
-    json_data = []
-    for row in file:
-        json_data.append(row)
-    # Use the loaded configuration in your ProfileReport
-    profile = ProfileReport(
-        file,
-        title="Uncleaned Data",
-        samples=None,
-        correlations=None,
-        interactions=None, 
-        progress_bar = True,
-        html={"navbar_show": False,
-              "minify_html": True,}
-    )
-
-    
-    comparison_report = profile.compare(betterReport)
-    nprofile = comparison_report.to_html()
-    return {"result": result, "fileFitForUse": fileFitForUse, "rows": rows, "columnsLength": len(columns), "columns": columns, "unfitColumns": fit_for_use.count(False), "unfitRows": nullRows, "histogram": file, "profile":nprofile}
+        
+        comparison_report = profile.compare(betterReport)
+        nprofile = comparison_report.to_html()
+        logger.info("Review completed successfully")
+        return {"result": result, "fileFitForUse": fileFitForUse, "rows": rows, 
+                "columnsLength": len(columns), "columns": columns, 
+                "unfitColumns": fit_for_use.count(False), 
+                "unfitRows": nullRows, "histogram": file, "profile":nprofile}
+    except Exception as e:
+        logger.error(f"Error in get_review: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise

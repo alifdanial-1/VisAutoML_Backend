@@ -6,6 +6,19 @@ import os
 import socket
 from contextlib import closing
 
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('dashboard_operations.log'),
+        logging.StreamHandler()
+    ]
+)
+
 
 def runModel(model_identifier, port):
     """
@@ -32,9 +45,12 @@ def runModel(model_identifier, port):
     
     # If port is still in use, find a new one
     if is_port_in_use(port):
-        port = find_free_port(port)
+        new_port = find_free_port(port)
+        logger.info(f"Port {port} in use, switching to port {new_port}")
+        port = new_port
     
     yaml_file = f"{model_identifier}.yaml"
+    logger.info(f"Loading dashboard from {yaml_file}")
     base_url = os.getenv('API_BASE_URL', 'visautomlbackend-production-0d04.up.railway.app')
     
     try:
@@ -56,6 +72,8 @@ def runModel(model_identifier, port):
         
         # Run the hub
         hub.run(port=port)
+        logger.info("Dashboard launched successfully")
     except Exception as e:
-        print(f"Error launching dashboard: {str(e)}")
+        logger.error(f"Error launching dashboard: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise
