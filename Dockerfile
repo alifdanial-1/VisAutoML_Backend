@@ -20,6 +20,8 @@ WORKDIR /app
 # Copy the application code
 COPY . .
 
+RUN npm install kill-port --save-dev
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
