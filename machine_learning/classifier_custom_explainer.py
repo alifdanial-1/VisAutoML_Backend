@@ -225,15 +225,12 @@ def prepare_model(drop, IDColumn):
     
         try:
             df1 = df[[result]]
-        except KeyError as e:
-            print(f"Error: {e}")
-        try:
             df.drop([result], axis=1, inplace=True, errors='ignore')
         except KeyError as e:
-            print(f"Error: {e}")
+            logger.error(f"Error processing result column: {str(e)}")
+            raise
     
         from sklearn.model_selection import train_test_split
-        # testingSize = 100-int(split)
         testingSize = (100-int(split))/100
         x_train, x_test, y_train, y_test = train_test_split(df, df1, test_size=testingSize, random_state=42, shuffle=True)
         return x_train, x_test, y_train, y_test, catCols, zero_label, one_label
@@ -486,8 +483,8 @@ def flask_main(x_train, x_test, y_train, y_test, catCols, model_id, auto):
                         self.predsum = ClassifierModelSummaryComponent(explainer, name=self.name + "predsum",
                                                                          hide_cutoff=True, cutoff=0.5, hide_selector=True)
                         self.interaction = ConfusionMatrixComponent(explainer, name=self.name + "interaction",
-                                                                    hide_cutoff=True, cutoff=0.5, hide_normalize=True,
-                                                                    hide_selector=True)
+                                                                            hide_cutoff=True, cutoff=0.5, hide_normalize=True,
+                                                                            hide_selector=True)
                         self.interactiond = PrecisionComponent(explainer, name=self.name + "interactiond", hide_cutoff=True,
                                                                cutoff=0.5, hide_binmethod=True, hide_binsize=True)
                         self.interaction1 = CumulativePrecisionComponent(explainer, name=self.name + "interaction1",
@@ -530,262 +527,6 @@ def flask_main(x_train, x_test, y_train, y_test, catCols, model_id, auto):
                         # ExplainerDashboard(explainer, [CustomDashboard, CustomPredictionsTab, Classif], boostrap=dbc.themes.FLATLY, title=projecttitle, plot_sample=1000, header_hide_selector=True).run()
     
                     return explainer, CustomDashboard, CustomPredictionsTab, Classif
-            else:
-                print(f"MANUAL ALGO SELECTION: {algo}")
-                scores = []
-                for i in algo:
-                    model = i().fit(x_train, y_train.values.ravel())
-    
-                    # testing training accuracy
-                    from sklearn import metrics
-                    from sklearn.metrics import accuracy_score
-                    from sklearn.metrics import balanced_accuracy_score
-                    from sklearn.metrics import average_precision_score
-                    from sklearn.metrics import roc_auc_score
-                    from sklearn.metrics import brier_score_loss
-    
-                    y_pred = model.predict(x_test)
-                    acc = accuracy_score(y_test, y_pred)
-                    bal_acc = balanced_accuracy_score(y_test, y_pred)
-                    roc_auc = roc_auc_score(y_test, y_pred)
-                    brier = brier_score_loss(y_test, y_pred)
-    
-                    # custom_score = ((acc + bal_acc + roc_auc - brier) / 3) / 0.01
-                    custom_score = 80*acc + 10*bal_acc + 10*roc_auc
-                    scores.append(custom_score)
-    
-                    print(f"Score: {custom_score}, accuracy: {acc}, balanced accuracy: {bal_acc}, roc auc: {roc_auc}, brier score loss: {brier}\n")
-    
-                    print(scores)
-                    best_score = max(scores)
-                    print("best_score", best_score)
-                    connpath = sqlite3.connect(db_path)
-                    with connpath as db:
-                        c = db.cursor()
-                        data = (str(best_score), model_id)
-                        sql_update_query = """Update machine_learning_model set overall_score = ? where id = ?"""
-                        c.execute(sql_update_query, data)
-                        db.commit()
-    
-                    # model_obj = Model.objects.get(id=model_id)
-                    # model_obj.overall_score = best_score
-                    # model_obj.save()
-                    explainer = ClassifierExplainer(model, x_test, y_test,
-                                                        cats=catCols,
-                                                        descriptions=descriptions,
-                                                        labels=[label0, label1])
-    
-                    explainer.plot_contributions(0)
-    
-                    class CustomDashboard(ExplainerComponent):
-                        def __init__(self, explainer, name=None, **kwargs):
-                            super().__init__(explainer, title="Impact")
-                            self.shap_summary = ShapSummaryComponent(explainer, name=self.name + "summary",
-                                                                     hide_title=True, hide_depth=True)
-                            self.precision = PrecisionComponent(explainer, name=self.name + "precision",
-                                                                hide_cutoff=True, hide_binsize=True,
-                                                                hide_binmethod=True, hide_multiclass=True,
-                                                                hide_selector=True, hide_title=True, hide_footer=True,
-                                                                cutoff=None, hide_depth=True)
-    
-                            self.featuredesc = FeatureDescriptionsComponent(explainer, name=self.name + "featuredesc",
-                                                                            hide_title=True, hide_subtitle=True)
-                            # self.connector = ShapSummaryDependenceConnector(self.shap_summary, self.shap_dependence)
-                            self.predictiontab = FeatureInputComponent(explainer, name=self.name + "predictiontab",
-                                                                               title="What If..",
-                                                                               subtitle="Adjust the column values to change the prediction",
-                                                                               hide_index=False, hide_depth=False, fill_row_first=True)
-                            self.predictiongraph = ShapContributionsGraphComponent(explainer,
-                                                                                   name=self.name + "predictiongraph",
-                                                                                   hide_title=False,
-                                                                                   subtitle="How has each value contributed to the prediction?",
-                                                                                   hide_index=False, hide_depth=False,
-                                                                                   hide_sort=False,
-                                                                                   feature_input_component=self.predictiontab,
-                                                                                   hide_selector=False)
-                            self.predictioncontrib = ShapContributionsTableComponent(explainer,
-                                                                                     name=self.name + "predictioncontrib",
-                                                                                     hide_title=False,
-                                                                                     subtitle="How has each value contributed to the prediction?",
-                                                                                     hide_index=False, hide_depth=False,
-                                                                                     hide_sort=False,
-                                                                                     feature_input_component=self.predictiontab,
-                                                                                     hide_selector=False)
-                            self.predictionsum = ClassifierPredictionSummaryComponent(explainer,
-                                                                                      name=self.name + "predictionsum",
-                                                                                      **kwargs)
-                            self.predictionsum1 = ImportancesComponent(explainer, name=self.name + "predictionsum1",
-                                                                         hide_type=True, hide_selector=True, hide_title=True,
-                                                                         hide_subtitle=True)
-    
-                        def layout(self):
-                            return dbc.Container([
-                                # dbc.Row([
-                                #     dbc.Col([
-                                #         html.H3("Feature Descriptions"),
-                                #         self.featuredesc.layout()
-                                #     ], style=dict(margin=20)),
-                                #     ], style=dict(margin=20)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Column Impact"),
-                                        html.Div(
-                                            "Analyze the impact each column has sorted from highest to lowest on the prediction."),
-                                        html.Div(f"{self.explainer.columns_ranked_by_shap()[0]} had the biggest impact"
-                                                 f", followed by {self.explainer.columns_ranked_by_shap()[1]}"
-                                                 f" and {self.explainer.columns_ranked_by_shap()[2]}."),
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.predictionsum1.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Individual Value Impact"),
-                                        html.Div(
-                                            "Explore the values from each column that have the greatest and least impact on the prediction."),
-                                        # self.predictiontab.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.predictiontab.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                # dbc.Row([
-                                #     dbc.Col([
-                                #         self.predictiongraph.layout()
-                                #     ], width=4, style=dict(margin=20)),
-                                #     ]),
-                                dbc.Row([
-                                    dbc.Col(self.predictioncontrib.layout(), style=dict(margin=10)),
-                                    dbc.Col(self.predictiongraph.layout(), style=dict(margin=10)),
-                                    # dbc.Col([
-                                    #     self.predictiongraph.layout()
-                                    # ]),
-                                ], style=dict(margin=10)),
-                                # dbc.Row([
-                                #     dbc.Col([
-                                #         html.H3("Prediction Summary"),
-                                #         self.predsum.layout()
-                                #     ], style=dict(margin=20)),
-                                #     ]),
-                            ])
-    
-                    class CustomPredictionsTab(ExplainerComponent):
-                        def __init__(self, explainer, name=None):
-                            super().__init__(explainer, title="Impact Relationship")
-                            self.shap_summary = ShapSummaryComponent(explainer, name=self.name + "summary",
-                                                                     hide_title=True, hide_subtitle=True)
-                            self.shap_dependence = ShapDependenceComponent(explainer, name=self.name + "dependence",
-                                                                           title="Impact Relationship",
-                                                                           subtitle="Relationship between Feature value and Impact value")
-                            self.connector = ShapSummaryDependenceConnector(self.shap_summary, self.shap_dependence)
-    
-                        def layout(self):
-                            return dbc.Container([
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Link between Columns & Impact"),
-                                        html.Div("Analyze the relationship each column has on the impact."),
-                                        html.Div(
-                                            "Click on a column in the Impact graph to explore the visualization in the Impact Relationship graph below."),
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.shap_summary.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.shap_dependence.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                            ])
-    
-                    class Interactions(ExplainerComponent):
-                        def __init__(self, explainer, name=None):
-                            super().__init__(explainer, title="Impact Interaction")
-                            self.interaction = InteractionSummaryComponent(explainer, name=self.name + "interaction",
-                                                                             hide_depth=True)
-                            self.interactiond = InteractionDependenceComponent(explainer, name=self.name + "interactiond",
-                                                                               hide_depth=True)
-                            self.interactioncon = InteractionSummaryDependenceConnector(self.interaction, self.interactiond)
-    
-                        def layout(self):
-                            return dbc.Container([
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Deep Dive"),
-                                        html.Div("Explore the effect of"),
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.interaction.layout()
-                                    ], style=dict(margin=10)),
-                                ]),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Feature impact plot"),
-                                        self.interactiond.layout()
-                                    ], style=dict(margin=10)),
-                                ]),
-                            ])
-    
-                    class Classif(ExplainerComponent):
-                        def __init__(self, explainer, name=None):
-                            super().__init__(explainer, title="Classification Metrics")
-                            self.predsum = ClassifierModelSummaryComponent(explainer, name=self.name + "predsum",
-                                                                             hide_cutoff=True, cutoff=0.5, hide_selector=True)
-                            self.interaction = ConfusionMatrixComponent(explainer, name=self.name + "interaction",
-                                                                            hide_cutoff=True, cutoff=0.5, hide_normalize=True,
-                                                                            hide_selector=True)
-                            self.interactiond = PrecisionComponent(explainer, name=self.name + "interactiond", hide_cutoff=True,
-                                                                   cutoff=0.5, hide_binmethod=True, hide_binsize=True)
-                            self.interaction1 = CumulativePrecisionComponent(explainer, name=self.name + "interaction1",
-                                                                             hide_cutoff=True, cutoff=0.5, hide_percentile=True)
-    
-                        def layout(self):
-                            return dbc.Container([
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Evaluate Classification Model Metrics"),
-                                        html.Div("Hover onto each metric to understand the classification model performance"),
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.predsum.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.H3("Visualize Precision and Recall"),
-                                        html.Div(
-                                            "Precision can be observed when True Positives (predicted " f"{self.explainer.labels[0]}" " and actual " f"{self.explainer.labels[0]}" ") are higher than False Positives " "(predicted " f"{self.explainer.labels[1]}" " and actual " f"{self.explainer.labels[0]}"")."),
-                                        html.Div(
-                                            "Recall can be observed when True Positives are higher than False Negatives" "(predicted " f"{self.explainer.labels[0]}" " and actual " f"{self.explainer.labels[1]}"")."),
-                                        # self.interaction.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                dbc.Row([
-                                    dbc.Col([
-                                        self.interaction.layout()
-                                    ], style=dict(margin=10)),
-                                ], style=dict(margin=10)),
-                                # dbc.Row([
-                                #     dbc.Col([
-                                #         self.interaction1.layout()
-                                #     ], style=dict(margin=20)),
-                                # ]),
-                            ])
-                            # ExplainerDashboard(explainer, [CustomDashboard, CustomPredictionsTab, Classif], boostrap=dbc.themes.FLATLY, title=projecttitle, plot_sample=1000, header_hide_selector=True).run()
-    
-                        return explainer, CustomDashboard, CustomPredictionsTab, Classif
     else:
         print(f"MANUAL ALGO SELECTION: {algo}")
         scores = []
@@ -871,8 +612,8 @@ def flask_main(x_train, x_test, y_train, y_test, catCols, model_id, auto):
                                                                               name=self.name + "predictionsum",
                                                                               **kwargs)
                     self.predictionsum1 = ImportancesComponent(explainer, name=self.name + "predictionsum1",
-                                                               hide_type=True, hide_selector=True, hide_title=True,
-                                                               hide_subtitle=True)
+                                                                   hide_type=True, hide_selector=True, hide_title=True,
+                                                                   hide_subtitle=True)
     
                 def layout(self):
                     return dbc.Container([
@@ -1001,7 +742,7 @@ def flask_main(x_train, x_test, y_train, y_test, catCols, model_id, auto):
                                                                             hide_cutoff=True, cutoff=0.5, hide_normalize=True,
                                                                             hide_selector=True)
                         self.interactiond = PrecisionComponent(explainer, name=self.name + "interactiond", hide_cutoff=True,
-                                                                   cutoff=0.5, hide_binmethod=True, hide_binsize=True)
+                                                               cutoff=0.5, hide_binmethod=True, hide_binsize=True)
                         self.interaction1 = CumulativePrecisionComponent(explainer, name=self.name + "interaction1",
                                                                           hide_cutoff=True, cutoff=0.5, hide_percentile=True)
     
