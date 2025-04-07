@@ -36,25 +36,26 @@ logging.basicConfig(
 )
 
 def get_assigned_port(model_instance):
-    """
-    Returns the port assigned to a model instance.
-    If the model does not have a port, assign one from the available pool within BASE_PORT..(BASE_PORT+MAX_DASHBOARDS-1)
-    based on the last MAX_DASHBOARDS models that already have ports.
-    """
     if model_instance.port:
         return model_instance.port
-    else:
-        # Get last MAX_DASHBOARDS models with an assigned port
-        last_models = Model.objects.filter(port__isnull=False).order_by('-id')[:MAX_DASHBOARDS]
-        assigned_ports = [m.port for m in last_models if m.port is not None]
-        
-        # Start from BASE_PORT and find the first available port
-        for port in range(BASE_PORT, BASE_PORT + MAX_DASHBOARDS):
-            if port not in assigned_ports:
-                return port
-                
-        # If all ports are taken, return the next port after the highest assigned port
-        return max(assigned_ports) + 1 if assigned_ports else BASE_PORT
+    
+    BASE_PORT = 8050
+    MAX_DASHBOARDS = 50
+    
+    used_ports = Model.objects.exclude(port__isnull=True).values_list('port', flat=True)
+    
+    for port in range(BASE_PORT, BASE_PORT + MAX_DASHBOARDS):
+        if port not in used_ports:
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+                if s.connect_ex(('localhost', port)) != 0:
+                    model_instance.port = port
+                    model_instance.save()
+                    return port
+    
+    new_port = find_free_port(BASE_PORT)
+    model_instance.port = new_port
+    model_instance.save()
+    return new_port
 
 def index(request):
     return render(request, "machine_learning/index.html")

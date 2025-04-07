@@ -67,7 +67,7 @@ def runModel(model_identifier, port):
             bootstrap="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css",
             port=port,
             host="0.0.0.0",
-            base_url=f"/model/{model_identifier}/",
+            base_url=f"http://0.0.0.0:{port}/",
         )
         
         # Run the hub
