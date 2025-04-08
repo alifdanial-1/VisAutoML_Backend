@@ -61,7 +61,9 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 COPY . .
 
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
+# COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+
 RUN npm install kill-port --save-dev
 RUN pip install --no-cache-dir -r requirements.txt
 
