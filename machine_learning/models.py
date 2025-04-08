@@ -14,7 +14,7 @@ class Model(models.Model):
         blank=True, null=True, decimal_places=1, max_digits=4)
     data_set = models.FileField(upload_to="datasets/")
     port = models.IntegerField(null=True, blank=True)
-
+    port = models.IntegerField(null=True, blank=True)
     def __str__(self):
         return self.model_name
 
@@ -22,3 +22,10 @@ class Model(models.Model):
 class ModelDescription(models.Model):
     model = models.OneToOneField(Model, on_delete=models.CASCADE)
     description = models.JSONField()
+
+
+class PortRegistry(models.Model):
+    port = models.IntegerField(unique=True)
+    in_use = models.BooleanField(default=False)
+    assigned_to = models.CharField(max_length=255, blank=True, null=True)  # e.g., model name
+    created_at = models.DateTimeField(auto_now_add=True)

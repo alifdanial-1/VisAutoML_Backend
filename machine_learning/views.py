@@ -19,6 +19,7 @@ from .models import Model, ModelDescription  # Make sure Model has a 'port' fiel
 from .review import get_review
 from .regression_custom_explainer import finishing
 # from .dashboard import runModel as original_runModel  # We now override runModel below
+# utils.py
 
 # Base port and maximum dashboards to run concurrently
 BASE_PORT = 8050
@@ -37,48 +38,62 @@ logging.basicConfig(
     ]
 )
 
+def is_port_available(port):
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        return sock.connect_ex(('localhost', port)) != 0
+
+
 def get_assigned_port(model_instance):
-    if model_instance.port:
+    if model_instance.port and is_port_available(model_instance.port):
         return model_instance.port
-    
-    BASE_PORT = 8050
-    MAX_DASHBOARDS = 50
-    
+
     used_ports = Model.objects.exclude(port__isnull=True).values_list('port', flat=True)
-    
     for port in range(BASE_PORT, BASE_PORT + MAX_DASHBOARDS):
-        if port not in used_ports:
-            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-                if s.connect_ex(('localhost', port)) != 0:
-                    model_instance.port = port
-                    model_instance.save()
-                    return port
-    
-    new_port = find_free_port(BASE_PORT)
-    model_instance.port = new_port
-    model_instance.save()
-    return new_port
+        if port not in used_ports and is_port_available(port):
+            model_instance.port = port
+            model_instance.save()
+            return port
+
+    raise Exception("No available ports to assign!")
+
 
 def index(request):
     return render(request, "machine_learning/index.html")
 
+
+def launch_dashboard_async(model_id, port):
+    """
+    Background task to launch dashboard.
+    """
+    try:
+        runModel(str(model_id), port)
+    except Exception as e:
+        logger.error(f"Failed to launch dashboard for model {model_id} on port {port}: {str(e)}")
+
+
 def dashboard(request, pk):
     """
-    Launches the dashboard for the given model (by primary key) on its assigned port.
+    API endpoint to start dashboard for model <pk>.
+    Returns the dynamic dashboard proxy URL.
     """
     try:
         model_instance = Model.objects.get(id=pk)
+
         port = get_assigned_port(model_instance)
-        # Persist the port assignment if not already set
-        if not model_instance.port:
-            model_instance.port = port
-            model_instance.save()
-        # Kill any process on the assigned port
-        os.system("npx kill-port " + str(port))
-        # Launch the dashboard. Here we assume that the joblib file is named 'explainer_<model_id>.joblib'
-        runModel(str(pk), port)
-        return JsonResponse({"response": "Success", "port": port})
+
+        logger.info(f"Launching dashboard for model {pk} on port {port}")
+
+        # Launch dashboard in background (non-blocking)
+        threading.Thread(target=launch_dashboard_async, args=(pk, port), daemon=True).start()
+
+        return JsonResponse({
+            "response": "Success",
+            "dashboard_url": f"/dashboard-proxy/{pk}/",
+            "port": port
+        })
+
     except Exception as e:
+        logger.error(f"Error in dashboard view: {str(e)}")
         traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
 
