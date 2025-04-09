@@ -1,9 +1,11 @@
 {% extends "base.html" %}
-{% load plotly_dash %}
 
 {% block content %}
 <div class="dashboard-container">
     <h1>Model Dashboard {{ model_id }}</h1>
-    {% plotly_app name="ModelDashboard_"|add:model_id|stringformat:"d" %}
+    <iframe src="/dashboard-proxy/{{ model_id }}/"
+            width="100%"
+            height="900px"
+            style="border: none;"></iframe>
 </div>
-{% endblock %} 
+{% endblock %}
