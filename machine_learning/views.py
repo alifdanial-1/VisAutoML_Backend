@@ -72,20 +72,15 @@ def launch_dashboard_async(model_id, port):
 
 
 def dashboard(request, pk):
-    """
-    API endpoint to start dashboard for model <pk>.
-    Returns the dynamic dashboard proxy URL.
-    """
     try:
         model_instance = Model.objects.get(id=pk)
-
         port = get_assigned_port(model_instance)
 
         logger.info(f"Launching dashboard for model {pk} on port {port}")
 
         # Launch dashboard in background (non-blocking)
         threading.Thread(target=launch_dashboard_async, args=(pk, port), daemon=True).start()
-
+        
         return JsonResponse({
             "response": "Success",
             "dashboard_url": f"/dashboard-proxy/{pk}/",
