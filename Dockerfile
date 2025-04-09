@@ -43,35 +43,47 @@
 
 FROM python:3.11-slim
 
+# System dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    build-essential \
     libgomp1 \
     libc6 \
     nodejs \
     npm \
     nginx \
     curl \
-    && apt-get clean
+    gettext \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Python env
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
+
+# Copy application code
 COPY . .
 
-# COPY nginx/nginx.conf /etc/nginx/nginx.conf
+# Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Install Node dependency
 RUN npm install kill-port --save-dev
+
+# ✅ Fix: install wheel before requirements
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Django setup
 RUN python manage.py collectstatic --noinput
 RUN python manage.py migrate
 
 EXPOSE 80
 
+# Final command
 CMD bash -c "\
     service nginx start && \
     gunicorn VisAutoML.wsgi:application --bind 0.0.0.0:8000"
