@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'VisAutoML.middleware.DashboardProxyMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise middleware should be placed directly after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware should be placed before CommonMiddleware
@@ -59,7 +60,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
+# Add dashboard configuration
+DASHBOARD_CONFIG = {
+    'BASE_PORT': 8050,
+    'MAX_DASHBOARDS': 30,
+}
 ROOT_URLCONF = 'VisAutoML.urls'
 
 TEMPLATES = [

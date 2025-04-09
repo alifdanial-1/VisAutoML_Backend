@@ -38,6 +38,43 @@ logging.basicConfig(
     ]
 )
 
+def dashboard_view(request, pk):
+    """
+    Renders a template that loads the dashboard in an iframe
+    """
+    return render(request, "machine_learning/dashboard_view.html", {"model_id": pk})
+
+def dashboard_status(request, pk):
+    """
+    Check if dashboard is running
+    """
+    try:
+        model_instance = Model.objects.get(id=pk)
+        
+        if not model_instance.port:
+            return JsonResponse({"status": "not_started"})
+        
+        # Check if port is in use
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            in_use = sock.connect_ex(('localhost', model_instance.port)) == 0
+        
+        return JsonResponse({
+            "status": "running" if in_use else "stopped",
+            "port": model_instance.port,
+            "dashboard_url": f"/dashboard-proxy/{pk}/" if in_use else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking dashboard status: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+def dashboard_proxy(request, model_id, path):
+    """
+    This is just a placeholder - the actual proxying is done by the middleware
+    """
+    # This function should never be called directly as the middleware will intercept the request
+    return HttpResponse("Dashboard proxy error. Middleware not working properly.", status=500)
+    
 def is_port_available(port):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         return sock.connect_ex(('localhost', port)) != 0
@@ -72,15 +109,20 @@ def launch_dashboard_async(model_id, port):
 
 
 def dashboard(request, pk):
+    """
+    API endpoint to start dashboard for model <pk>.
+    Returns the dynamic dashboard proxy URL.
+    """
     try:
         model_instance = Model.objects.get(id=pk)
+
         port = get_assigned_port(model_instance)
 
         logger.info(f"Launching dashboard for model {pk} on port {port}")
 
         # Launch dashboard in background (non-blocking)
         threading.Thread(target=launch_dashboard_async, args=(pk, port), daemon=True).start()
-        
+
         return JsonResponse({
             "response": "Success",
             "dashboard_url": f"/dashboard-proxy/{pk}/",

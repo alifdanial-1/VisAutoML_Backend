@@ -133,5 +133,3 @@ WTForms==3.2.1
 xgboost==3.0.0
 ydata-profiling==4.5.1
 zipp==3.21.0
-wheel==0.42.0
-setuptools>=65.5.1

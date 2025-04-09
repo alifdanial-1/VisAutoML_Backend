@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+<!-- {% extends "base.html" %}
 
 {% block content %}
 <div class="dashboard-index">
@@ -11,4 +11,78 @@
         {% endfor %}
     </ul>
 </div>
-{% endblock %} 
+{% endblock %}  -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1>Model Dashboard</h1>
+            <div id="dashboard-status" class="alert alert-info">Loading dashboard...</div>
+            <div id="dashboard-frame" style="height: 800px; width: 100%;">
+                <iframe id="dashboard-iframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modelId = {{ model_id }};
+    const statusElement = document.getElementById('dashboard-status');
+    const iframe = document.getElementById('dashboard-iframe');
+    
+    // Check dashboard status first
+    fetch(`/dashboard/status/${modelId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "running") {
+                statusElement.textContent = 'Dashboard is already running';
+                statusElement.className = 'alert alert-success';
+                loadDashboard(data.dashboard_url);
+            } else {
+                // Start the dashboard
+                statusElement.textContent = 'Starting dashboard...';
+                fetch(`/dashboard/start/${modelId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.dashboard_url) {
+                            statusElement.textContent = 'Dashboard loaded';
+                            statusElement.className = 'alert alert-success';
+                            loadDashboard(data.dashboard_url);
+                        } else {
+                            statusElement.textContent = 'Error starting dashboard: ' + (data.error || 'Unknown error');
+                            statusElement.className = 'alert alert-danger';
+                        }
+                    })
+                    .catch(error => {
+                        statusElement.textContent = 'Error: ' + error;
+                        statusElement.className = 'alert alert-danger';
+                    });
+            }
+        })
+        .catch(error => {
+            statusElement.textContent = 'Error checking status: ' + error;
+            statusElement.className = 'alert alert-danger';
+        });
+    
+    function loadDashboard(url) {
+        iframe.src = url;
+        iframe.style.display = 'block';
+        
+        // Handle iframe load events
+        iframe.onload = function() {
+            statusElement.style.display = 'none';
+        };
+        
+        iframe.onerror = function() {
+            statusElement.textContent = 'Error loading dashboard';
+            statusElement.className = 'alert alert-danger';
+            statusElement.style.display = 'block';
+        };
+    }
+});
+</script>
+{% endblock %}
