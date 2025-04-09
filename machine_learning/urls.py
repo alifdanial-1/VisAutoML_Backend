@@ -18,7 +18,8 @@ urlpatterns = [
     path("api/dashboard/<pk>/", views.ModelViewSet.as_view({"post": "open"})),
 
     # Dashboard UI pages
-    path("dashboards/", views.dashboard_index, name="dashboard_index"),
+    # path("dashboards/", views.dashboard_index, name="dashboard_index"),
+    path("dashboards/", views.dashboard_view, name="dashboard_view"),
     path("dashboards/<int:model_id>/", views.model_dashboard, name="model_dashboard"),
 
     # Optional: start/view/status if still used for launching dashboards
