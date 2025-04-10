@@ -17,16 +17,6 @@ urlpatterns = [
     path("api/description/<pk>/", views.ModelDescriptionViewSet.as_view({"patch": "update"})),
     path("api/dashboard/<pk>/", views.ModelViewSet.as_view({"post": "open"})),
 
-    # Dashboard UI pages
-    # path("dashboards/", views.dashboard_index, name="dashboard_index"),
-    path("dashboards/", views.dashboard_view, name="dashboard_view"),
-    path("dashboards/<int:model_id>/", views.model_dashboard, name="model_dashboard"),
-
-    # Optional: start/view/status if still used for launching dashboards
-    path("dashboard/start/<pk>/", views.dashboard, name="start_dashboard"),
-    path("dashboard/view/<pk>/", views.dashboard_view, name="view_dashboard"),
-    path("dashboard/status/<pk>/", views.dashboard_status, name="dashboard_status"),
-
     path("test-media/", TemplateView.as_view(template_name='machine_learning/test_media.html')),
 ]
 
