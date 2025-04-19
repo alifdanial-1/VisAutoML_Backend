@@ -51,7 +51,6 @@ RUN apt-get update && apt-get install -y \
     libc6 \
     nodejs \
     npm \
-    nginx \
     curl \
     gettext \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -67,9 +66,6 @@ WORKDIR /app
 # Copy application code
 COPY . .
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
-
 # Install Node dependency
 RUN npm install kill-port --save-dev
 
@@ -84,6 +80,4 @@ RUN python manage.py migrate
 EXPOSE 80
 
 # Final command
-CMD bash -c "\
-    service nginx start && \
-    gunicorn VisAutoML.wsgi:application --bind 0.0.0.0:8000"
+CMD bash -c "gunicorn VisAutoML.wsgi:application --bind 0.0.0.0:8000"
