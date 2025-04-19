@@ -10,6 +10,9 @@ from multiprocessing import Process
 import threading
 import pandas as pd
 import os
+import random
+import subprocess
+import socket
 
 
 from .serializers import ModelSerializer, ModelDescriptionSerializer
@@ -45,7 +48,16 @@ def dashboard(request, pk):
 #     return JsonResponse({'response': response.choices[0].text})
 
 
-
+def get_free_port(start=8051, end=8999, max_tries=100):
+    for _ in range(max_tries):
+        port = random.randint(start, end)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("", port))
+                return port
+            except OSError:
+                continue
+    raise Exception("No free port found after 100 attempts")
 
 class ModelViewSet(viewsets.ViewSet):
 
@@ -89,13 +101,24 @@ class ModelViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
     def open(self, request, pk):
-        print("dashboard >>>>>", pk)
+        model = Model.objects.get(id=pk)
 
-        os.system("npx kill-port 8050")
-        os.system('explainerdashboard run '+pk+'.yaml --no-browser')
-        # os.system("explainerdashboard run explainer.joblib")
+        # Assign a port if not already assigned
+        if not model.dashboard_port:
+            port = get_free_port()
+            model.dashboard_port = port
+            model.save()
+        else:
+            port = model.dashboard_port
 
-        return Response({"response":"Success"})
+        os.system(f"npx kill-port {port}")
+
+        subprocess.Popen(
+            f'explainerdashboard run {pk}.yaml --port {port} --no-browser',
+            shell=True
+        )
+
+        return Response({"url": f"http://localhost:{port}"})
 
 
 class ModelDescriptionViewSet(viewsets.ViewSet):
@@ -183,7 +206,9 @@ class FlaskModelViewSet(viewsets.ViewSet):
             print("thread+++++++++++")
             p.start()
             p.join()
-            return Response(data={"message": "success"}, status=status.HTTP_200_OK)
+            serializer = ModelSerializer(model_obj)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         except Exception as e:
             traceback.print_exc()
 

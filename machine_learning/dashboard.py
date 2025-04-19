@@ -1,11 +1,13 @@
 from explainerdashboard import ExplainerDashboard
-import sys
-import joblib
 import os
 
-def runModel(filename):
-    # model = joblib.load('model.joblib')
-    os.system("npx kill-port 8050")
-    os.system("explainerdashboard run explainer.joblib")
+def runModel(filename, port=8050):
+    os.environ["DASH_CSP_HEADER_DISABLED"] = "1"
 
-    # os.system('explainerdashboard run '+filename+'.joblib')
+    db = ExplainerDashboard.from_yaml(
+        f"{filename}.yaml",
+        explainerfile=f"{filename}.joblib",
+        allow_remote=True
+    )
+
+    db.run(port=port, use_reloader=False)
