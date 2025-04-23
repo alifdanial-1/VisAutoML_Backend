@@ -17,11 +17,11 @@
     }
   },
   "deploy": {
-    "startCommand": "gunicorn VisAutoML.wsgi:application --workers 2 --worker-class gevent --timeout 120",
+    "startCommand": "gunicorn VisAutoML.wsgi:application --workers 2 --worker-class gevent --timeout 500",
     "env": {
       "PORT": "8000",
-      "API_BASE_URL": "https://visautomlbackend-production.up.railway.app/",
-      "BACKEND_BASE_URL": "https://visautomlbackend-production.up.railway.app/api/",
+      "API_BASE_URL": "https://visautomlbackend-production-0d04.up.railway.app/",
+      "BACKEND_BASE_URL": "https://visautomlbackend-production-0d04.up.railway.app/api/",
       "RAILWAY_ENVIRONMENT": "production",
       "ALLOWED_HOSTS": "visautomlbackend-production.up.railway.app",
       "GUNICORN_WORKER_CONNECTIONS": "1000",
