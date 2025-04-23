@@ -34,7 +34,7 @@
       </tr>
       <tr>
         <th>Request URL:</th>
-        <td>http://localhost:8000/datasets/Regression/CarPrice_Prediction_Regression.csv</td>
+        <td>https://visautomlbackend-production-0d04.up.railway.app/datasets/Regression/CarPrice_Prediction_Regression.csv</td>
       </tr>
       
     </table>

@@ -34,7 +34,7 @@
       </tr>
       <tr>
         <th>Request URL:</th>
-        <td>http://localhost:8000/datasets/Classification/Income_Prediction_Classification.csv</td>
+        <td>https://visautomlbackend-production-0d04.up.railway.app/datasets/Classification/Income_Prediction_Classification.csv</td>
       </tr>
       
     </table>
